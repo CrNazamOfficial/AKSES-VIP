@@ -1,351 +1,625 @@
-_G.VIPSystem = _G.VIPSystem or {VIPList = {}, WebhookURL = "https://discord.com/api/webhooks/1469648089315934260/JHITq3HReyO3c0MIVeC38CoCtxbu_NhVsxqg3VDlwr8ytqd3Zvlnb05mWZ5JQbEvgJ3l"}
+-- VIP MANAGER by Nazam
+-- Manage VIP Users via Discord Webhook
 
 local HttpService = game:GetService("HttpService")
-local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+local player = Players.LocalPlayer
 
-local AdminKey = "vip-zam"
+-- WEBHOOK URL
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1469648089315934260/JHITq3HReyO3c0MIVeC38CoCtxbu_NhVsxqg3VDlwr8ytqd3Zvlnb05mWZ5JQbEvgJ3l"
 
-local function loadVIPList()
-    if isfile("vip_list.json") then
-        pcall(function()
-            _G.VIPSystem.VIPList = HttpService:JSONDecode(readfile("vip_list.json"))
-        end)
+-- VIP Data Storage (GitHub Raw URL - ganti dengan repo kamu)
+local VIP_DATA_URL = "https://raw.githubusercontent.com/CrNazamOfficial/VIP-Data/main/vip.lua"
+
+-- Local VIP List
+local VIPList = {}
+
+-- Load VIP Data dari GitHub
+local function loadVIPData()
+    local success, data = pcall(function()
+        return loadstring(game:HttpGet(VIP_DATA_URL))()
+    end)
+    
+    if success and data then
+        VIPList = data.users or {}
+        return true
+    else
+        VIPList = {}
+        return false
     end
 end
 
-local function createAdminPanel()
-    local AdminGui = Instance.new("ScreenGui")
-    AdminGui.Name = "AdminPanelGUI"
-    AdminGui.Parent = game.CoreGui
-    AdminGui.ResetOnSpawn = false
+-- Send Discord Webhook
+local function sendWebhook(title, description, color)
+    local data = {
+        ["embeds"] = {{
+            ["title"] = title,
+            ["description"] = description,
+            ["color"] = color or 3447003,
+            ["footer"] = {
+                ["text"] = "Vortex's VIP Manager by Nazam"
+            },
+            ["timestamp"] = DateTime.now():ToIsoDate()
+        }}
+    }
     
-    local KeyFrame = Instance.new("Frame")
-    KeyFrame.Size = UDim2.new(0, 350, 0, 150)
-    KeyFrame.Position = UDim2.new(0.5, -175, 0.5, -75)
-    KeyFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-    KeyFrame.BorderSizePixel = 0
-    KeyFrame.Parent = AdminGui
-    Instance.new("UICorner", KeyFrame).CornerRadius = UDim.new(0, 15)
-    
-    local KeyStroke = Instance.new("UIStroke")
-    KeyStroke.Color = Color3.fromRGB(255, 100, 100)
-    KeyStroke.Thickness = 2
-    KeyStroke.Parent = KeyFrame
-    
-    local KeyTitle = Instance.new("TextLabel")
-    KeyTitle.Size = UDim2.new(1, 0, 0, 40)
-    KeyTitle.BackgroundTransparency = 1
-    KeyTitle.Text = "ADMIN PANEL"
-    KeyTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    KeyTitle.Font = Enum.Font.GothamBold
-    KeyTitle.TextSize = 20
-    KeyTitle.Parent = KeyFrame
-    
-    local KeyInput = Instance.new("TextBox")
-    KeyInput.Size = UDim2.new(0.9, 0, 0, 40)
-    KeyInput.Position = UDim2.new(0.05, 0, 0, 50)
-    KeyInput.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-    KeyInput.PlaceholderText = "Enter Key..."
-    KeyInput.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-    KeyInput.Text = ""
-    KeyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-    KeyInput.Font = Enum.Font.Gotham
-    KeyInput.TextSize = 14
-    KeyInput.ClearTextOnFocus = false
-    KeyInput.Parent = KeyFrame
-    Instance.new("UICorner", KeyInput).CornerRadius = UDim.new(0, 8)
-    
-    local SubmitButton = Instance.new("TextButton")
-    SubmitButton.Size = UDim2.new(0.9, 0, 0, 40)
-    SubmitButton.Position = UDim2.new(0.05, 0, 0, 100)
-    SubmitButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-    SubmitButton.Text = "SUBMIT"
-    SubmitButton.TextColor3 = Color3.fromRGB(0, 0, 0)
-    SubmitButton.Font = Enum.Font.GothamBold
-    SubmitButton.TextSize = 16
-    SubmitButton.Parent = KeyFrame
-    Instance.new("UICorner", SubmitButton).CornerRadius = UDim.new(0, 8)
-    
-    SubmitButton.MouseButton1Click:Connect(function()
-        if KeyInput.Text == AdminKey then
-            KeyFrame:Destroy()
-            
-            local MainAdminFrame = Instance.new("Frame")
-            MainAdminFrame.Size = UDim2.new(0, 500, 0, 600)
-            MainAdminFrame.Position = UDim2.new(0.5, -250, 0.5, -300)
-            MainAdminFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-            MainAdminFrame.BorderSizePixel = 0
-            MainAdminFrame.Parent = AdminGui
-            Instance.new("UICorner", MainAdminFrame).CornerRadius = UDim.new(0, 15)
-            
-            local AdminStroke = Instance.new("UIStroke")
-            AdminStroke.Color = Color3.fromRGB(255, 100, 100)
-            AdminStroke.Thickness = 2
-            AdminStroke.Parent = MainAdminFrame
-            
-            local TopBar = Instance.new("Frame")
-            TopBar.Size = UDim2.new(1, 0, 0, 50)
-            TopBar.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-            TopBar.BorderSizePixel = 0
-            TopBar.Parent = MainAdminFrame
-            Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 15)
-            
-            local AdminTitle = Instance.new("TextLabel")
-            AdminTitle.Size = UDim2.new(0.8, 0, 1, 0)
-            AdminTitle.Position = UDim2.new(0, 15, 0, 0)
-            AdminTitle.BackgroundTransparency = 1
-            AdminTitle.Text = "VIP MANAGER"
-            AdminTitle.TextColor3 = Color3.fromRGB(255, 100, 100)
-            AdminTitle.Font = Enum.Font.GothamBold
-            AdminTitle.TextSize = 22
-            AdminTitle.TextXAlignment = Enum.TextXAlignment.Left
-            AdminTitle.Parent = TopBar
-            
-            local CloseAdmin = Instance.new("TextButton")
-            CloseAdmin.Size = UDim2.new(0, 40, 0, 40)
-            CloseAdmin.Position = UDim2.new(1, -45, 0, 5)
-            CloseAdmin.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-            CloseAdmin.Text = "X"
-            CloseAdmin.TextColor3 = Color3.fromRGB(255, 255, 255)
-            CloseAdmin.Font = Enum.Font.GothamBold
-            CloseAdmin.TextSize = 20
-            CloseAdmin.Parent = TopBar
-            Instance.new("UICorner", CloseAdmin).CornerRadius = UDim.new(0, 10)
-            
-            CloseAdmin.MouseButton1Click:Connect(function()
-                AdminGui:Destroy()
-            end)
-            
-            local UsernameInput = Instance.new("TextBox")
-            UsernameInput.Size = UDim2.new(0.9, 0, 0, 40)
-            UsernameInput.Position = UDim2.new(0.05, 0, 0, 70)
-            UsernameInput.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-            UsernameInput.PlaceholderText = "Username..."
-            UsernameInput.Text = ""
-            UsernameInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-            UsernameInput.Font = Enum.Font.Gotham
-            UsernameInput.TextSize = 14
-            UsernameInput.Parent = MainAdminFrame
-            Instance.new("UICorner", UsernameInput).CornerRadius = UDim.new(0, 8)
-            
-            local DaysInput = Instance.new("TextBox")
-            DaysInput.Size = UDim2.new(0.9, 0, 0, 40)
-            DaysInput.Position = UDim2.new(0.05, 0, 0, 120)
-            DaysInput.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-            DaysInput.PlaceholderText = "Days (e.g., 7, 30, 365)"
-            DaysInput.Text = ""
-            DaysInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-            DaysInput.Font = Enum.Font.Gotham
-            DaysInput.TextSize = 14
-            DaysInput.Parent = MainAdminFrame
-            Instance.new("UICorner", DaysInput).CornerRadius = UDim.new(0, 8)
-            
-            local AddVIPButton = Instance.new("TextButton")
-            AddVIPButton.Size = UDim2.new(0.43, 0, 0, 45)
-            AddVIPButton.Position = UDim2.new(0.05, 0, 0, 170)
-            AddVIPButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-            AddVIPButton.Text = "ADD VIP"
-            AddVIPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-            AddVIPButton.Font = Enum.Font.GothamBold
-            AddVIPButton.TextSize = 16
-            AddVIPButton.Parent = MainAdminFrame
-            Instance.new("UICorner", AddVIPButton).CornerRadius = UDim.new(0, 10)
-            
-            local RemoveVIPButton = Instance.new("TextButton")
-            RemoveVIPButton.Size = UDim2.new(0.43, 0, 0, 45)
-            RemoveVIPButton.Position = UDim2.new(0.52, 0, 0, 170)
-            RemoveVIPButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-            RemoveVIPButton.Text = "REMOVE VIP"
-            RemoveVIPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-            RemoveVIPButton.Font = Enum.Font.GothamBold
-            RemoveVIPButton.TextSize = 16
-            RemoveVIPButton.Parent = MainAdminFrame
-            Instance.new("UICorner", RemoveVIPButton).CornerRadius = UDim.new(0, 10)
-            
-            local VIPListFrame = Instance.new("ScrollingFrame")
-            VIPListFrame.Size = UDim2.new(0.9, 0, 0, 350)
-            VIPListFrame.Position = UDim2.new(0.05, 0, 0, 230)
-            VIPListFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-            VIPListFrame.BorderSizePixel = 0
-            VIPListFrame.ScrollBarThickness = 6
-            VIPListFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-            VIPListFrame.Parent = MainAdminFrame
-            Instance.new("UICorner", VIPListFrame).CornerRadius = UDim.new(0, 10)
-            
-            local VIPListLayout = Instance.new("UIListLayout")
-            VIPListLayout.Padding = UDim.new(0, 5)
-            VIPListLayout.Parent = VIPListFrame
-            
-            VIPListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                VIPListFrame.CanvasSize = UDim2.new(0, 0, 0, VIPListLayout.AbsoluteContentSize.Y + 10)
-            end)
-            
-            local function sendWebhook(action, username, days)
-                local data = {
-                    ["content"] = "",
-                    ["embeds"] = {{
-                        ["title"] = "VIP System - " .. action,
-                        ["description"] = string.format("**Username:** %s\n**Days:** %s\n**Action:** %s\n**Time:** %s", 
-                            username, 
-                            days or "N/A", 
-                            action, 
-                            os.date("%Y-%m-%d %H:%M:%S")),
-                        ["color"] = action == "ADD VIP" and 65280 or 16711680,
-                        ["footer"] = {["text"] = "VIP System by Nazam"}
-                    }}
-                }
-                
-                pcall(function()
-                    request({
-                        Url = _G.VIPSystem.WebhookURL,
-                        Method = "POST",
-                        Headers = {["Content-Type"] = "application/json"},
-                        Body = HttpService:JSONEncode(data)
-                    })
-                end)
-            end
-            
-            local function updateVIPList()
-                for _, child in pairs(VIPListFrame:GetChildren()) do
-                    if child:IsA("Frame") then child:Destroy() end
-                end
-                
-                loadVIPList()
-                
-                for username, data in pairs(_G.VIPSystem.VIPList) do
-                    local VIPEntry = Instance.new("Frame")
-                    VIPEntry.Size = UDim2.new(1, -10, 0, 50)
-                    VIPEntry.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-                    VIPEntry.BorderSizePixel = 0
-                    VIPEntry.Parent = VIPListFrame
-                    Instance.new("UICorner", VIPEntry).CornerRadius = UDim.new(0, 8)
-                    
-                    local UsernameLabel = Instance.new("TextLabel")
-                    UsernameLabel.Size = UDim2.new(0.5, 0, 0.5, 0)
-                    UsernameLabel.Position = UDim2.new(0, 10, 0, 0)
-                    UsernameLabel.BackgroundTransparency = 1
-                    UsernameLabel.Text = username
-                    UsernameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-                    UsernameLabel.Font = Enum.Font.GothamBold
-                    UsernameLabel.TextSize = 14
-                    UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
-                    UsernameLabel.Parent = VIPEntry
-                    
-                    local timeLeft = data.expire - os.time()
-                    local daysLeft = math.floor(timeLeft / 86400)
-                    
-                    local ExpireLabel = Instance.new("TextLabel")
-                    ExpireLabel.Size = UDim2.new(0.5, 0, 0.5, 0)
-                    ExpireLabel.Position = UDim2.new(0, 10, 0.5, 0)
-                    ExpireLabel.BackgroundTransparency = 1
-                    ExpireLabel.Text = string.format("Expires: %d days", daysLeft)
-                    ExpireLabel.TextColor3 = daysLeft < 7 and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(150, 150, 150)
-                    ExpireLabel.Font = Enum.Font.Gotham
-                    ExpireLabel.TextSize = 12
-                    ExpireLabel.TextXAlignment = Enum.TextXAlignment.Left
-                    ExpireLabel.Parent = VIPEntry
-                    
-                    local DeleteButton = Instance.new("TextButton")
-                    DeleteButton.Size = UDim2.new(0, 60, 0, 30)
-                    DeleteButton.Position = UDim2.new(1, -70, 0.5, -15)
-                    DeleteButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-                    DeleteButton.Text = "DELETE"
-                    DeleteButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-                    DeleteButton.Font = Enum.Font.GothamBold
-                    DeleteButton.TextSize = 11
-                    DeleteButton.Parent = VIPEntry
-                    Instance.new("UICorner", DeleteButton).CornerRadius = UDim.new(0, 6)
-                    
-                    DeleteButton.MouseButton1Click:Connect(function()
-                        _G.VIPSystem.VIPList[username] = nil
-                        writefile("vip_list.json", HttpService:JSONEncode(_G.VIPSystem.VIPList))
-                        sendWebhook("REMOVE VIP", username, nil)
-                        updateVIPList()
-                    end)
-                end
-            end
-            
-            AddVIPButton.MouseButton1Click:Connect(function()
-                local username = UsernameInput.Text
-                local days = tonumber(DaysInput.Text)
-                
-                if username ~= "" and days and days > 0 then
-                    local expireTime = os.time() + (days * 86400)
-                    _G.VIPSystem.VIPList[username] = {expire = expireTime, addedBy = LocalPlayer.Name}
-                    writefile("vip_list.json", HttpService:JSONEncode(_G.VIPSystem.VIPList))
-                    sendWebhook("ADD VIP", username, days)
-                    
-                    UsernameInput.Text = ""
-                    DaysInput.Text = ""
-                    updateVIPList()
-                    
-                    TweenService:Create(AddVIPButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(100, 255, 100)}):Play()
-                    wait(0.2)
-                    TweenService:Create(AddVIPButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(50, 200, 50)}):Play()
-                end
-            end)
-            
-            RemoveVIPButton.MouseButton1Click:Connect(function()
-                local username = UsernameInput.Text
-                
-                if username ~= "" and _G.VIPSystem.VIPList[username] then
-                    _G.VIPSystem.VIPList[username] = nil
-                    writefile("vip_list.json", HttpService:JSONEncode(_G.VIPSystem.VIPList))
-                    sendWebhook("REMOVE VIP", username, nil)
-                    
-                    UsernameInput.Text = ""
-                    updateVIPList()
-                    
-                    TweenService:Create(RemoveVIPButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 100, 100)}):Play()
-                    wait(0.2)
-                    TweenService:Create(RemoveVIPButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200, 50, 50)}):Play()
-                end
-            end)
-            
-            updateVIPList()
-            
-            local dragging, dragInput, dragStart, startPos
-            TopBar.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    dragging = true
-                    dragStart = input.Position
-                    startPos = MainAdminFrame.Position
-                    
-                    input.Changed:Connect(function()
-                        if input.UserInputState == Enum.UserInputState.End then
-                            dragging = false
-                        end
-                    end)
-                end
-            end)
-            
-            game:GetService("UserInputService").InputChanged:Connect(function(input)
-                if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                    local delta = input.Position - dragStart
-                    MainAdminFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-                end
-            end)
-            
-        else
-            KeyInput.Text = ""
-            KeyInput.PlaceholderText = "WRONG KEY!"
-            KeyInput.PlaceholderColor3 = Color3.fromRGB(255, 50, 50)
-            TweenService:Create(KeyFrame, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(50, 15, 15)}):Play()
-            wait(0.5)
-            TweenService:Create(KeyFrame, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(15, 15, 20)}):Play()
-            wait(1)
-            KeyInput.PlaceholderText = "Enter Key..."
-            KeyInput.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-        end
+    local success, err = pcall(function()
+        local response = request({
+            Url = WEBHOOK_URL,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = HttpService:JSONEncode(data)
+        })
     end)
+    
+    return success
 end
 
-createAdminPanel()
+-- Create GUI
+local function createVIPManagerGUI()
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "VIPManagerGUI"
+    gui.Parent = game.CoreGui
+    gui.ResetOnSpawn = false
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    
+    -- Icon Button
+    local iconButton = Instance.new("ImageButton")
+    iconButton.Name = "MinimizedIcon"
+    iconButton.Size = UDim2.new(0, 40, 0, 40)
+    iconButton.Position = UDim2.new(0, 15, 0, 200)
+    iconButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    iconButton.BorderColor3 = Color3.fromRGB(255, 215, 0)
+    iconButton.BorderSizePixel = 2
+    iconButton.Visible = false
+    iconButton.Active = true
+    iconButton.Parent = gui
+    
+    local iconCorner = Instance.new("UICorner")
+    iconCorner.CornerRadius = UDim.new(0, 8)
+    iconCorner.Parent = iconButton
+    
+    local iconLabel = Instance.new("TextLabel")
+    iconLabel.Size = UDim2.new(1, 0, 1, 0)
+    iconLabel.BackgroundTransparency = 1
+    iconLabel.Text = "VIP"
+    iconLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+    iconLabel.Font = Enum.Font.GothamBold
+    iconLabel.TextSize = 14
+    iconLabel.Parent = iconButton
+    
+    -- Main Frame
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Size = UDim2.new(0, 300, 0, 400)
+    mainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    mainFrame.BorderColor3 = Color3.fromRGB(255, 215, 0)
+    mainFrame.BorderSizePixel = 3
+    mainFrame.Active = true
+    mainFrame.Visible = true
+    mainFrame.Parent = gui
+    
+    local mainCorner = Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(0, 12)
+    mainCorner.Parent = mainFrame
+    
+    -- Drag Handle
+    local dragHandle = Instance.new("Frame")
+    dragHandle.Name = "DragHandle"
+    dragHandle.Size = UDim2.new(1, 0, 0, 30)
+    dragHandle.BackgroundTransparency = 1
+    dragHandle.Active = true
+    dragHandle.Parent = mainFrame
+    
+    -- Header
+    local header = Instance.new("Frame")
+    header.Size = UDim2.new(1, 0, 0, 30)
+    header.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    header.Parent = mainFrame
+    
+    local headerCorner = Instance.new("UICorner")
+    headerCorner.CornerRadius = UDim.new(0, 12)
+    headerCorner.Parent = header
+    
+    local headerFix = Instance.new("Frame")
+    headerFix.Size = UDim2.new(1, 0, 0, 15)
+    headerFix.Position = UDim2.new(0, 0, 1, -15)
+    headerFix.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    headerFix.BorderSizePixel = 0
+    headerFix.Parent = header
+    
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(0.7, 0, 1, 0)
+    title.Position = UDim2.new(0, 10, 0, 0)
+    title.BackgroundTransparency = 1
+    title.Text = "VIP MANAGER"
+    title.TextColor3 = Color3.fromRGB(255, 215, 0)
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 14
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Parent = header
+    
+    local closeButton = Instance.new("TextButton")
+    closeButton.Size = UDim2.new(0, 25, 0, 25)
+    closeButton.Position = UDim2.new(1, -28, 0.5, -12.5)
+    closeButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    closeButton.BorderColor3 = Color3.fromRGB(255, 215, 0)
+    closeButton.BorderSizePixel = 1
+    closeButton.Text = "X"
+    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeButton.Font = Enum.Font.GothamBold
+    closeButton.TextSize = 12
+    closeButton.Parent = header
+    
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(0, 5)
+    closeCorner.Parent = closeButton
+    
+    closeButton.MouseEnter:Connect(function()
+        closeButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+    end)
+    
+    closeButton.MouseLeave:Connect(function()
+        closeButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    end)
+    
+    -- Input Section
+    local inputFrame = Instance.new("Frame")
+    inputFrame.Size = UDim2.new(0.92, 0, 0, 100)
+    inputFrame.Position = UDim2.new(0.04, 0, 0, 40)
+    inputFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    inputFrame.BorderSizePixel = 0
+    inputFrame.Parent = mainFrame
+    
+    local inputCorner = Instance.new("UICorner")
+    inputCorner.CornerRadius = UDim.new(0, 8)
+    inputCorner.Parent = inputFrame
+    
+    local usernameLabel = Instance.new("TextLabel")
+    usernameLabel.Size = UDim2.new(1, -10, 0, 20)
+    usernameLabel.Position = UDim2.new(0, 5, 0, 5)
+    usernameLabel.BackgroundTransparency = 1
+    usernameLabel.Text = "Roblox Username:"
+    usernameLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    usernameLabel.Font = Enum.Font.Gotham
+    usernameLabel.TextSize = 10
+    usernameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    usernameLabel.Parent = inputFrame
+    
+    local usernameInput = Instance.new("TextBox")
+    usernameInput.Size = UDim2.new(1, -10, 0, 25)
+    usernameInput.Position = UDim2.new(0, 5, 0, 25)
+    usernameInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    usernameInput.BorderColor3 = Color3.fromRGB(255, 215, 0)
+    usernameInput.BorderSizePixel = 1
+    usernameInput.Text = ""
+    usernameInput.PlaceholderText = "Enter username..."
+    usernameInput.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
+    usernameInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    usernameInput.Font = Enum.Font.Gotham
+    usernameInput.TextSize = 11
+    usernameInput.ClearTextOnFocus = false
+    usernameInput.Parent = inputFrame
+    
+    local inputBoxCorner = Instance.new("UICorner")
+    inputBoxCorner.CornerRadius = UDim.new(0, 5)
+    inputBoxCorner.Parent = usernameInput
+    
+    local daysLabel = Instance.new("TextLabel")
+    daysLabel.Size = UDim2.new(0.5, -5, 0, 20)
+    daysLabel.Position = UDim2.new(0, 5, 0, 55)
+    daysLabel.BackgroundTransparency = 1
+    daysLabel.Text = "Days:"
+    daysLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    daysLabel.Font = Enum.Font.Gotham
+    daysLabel.TextSize = 10
+    daysLabel.TextXAlignment = Enum.TextXAlignment.Left
+    daysLabel.Parent = inputFrame
+    
+    local daysInput = Instance.new("TextBox")
+    daysInput.Size = UDim2.new(0.5, -10, 0, 20)
+    daysInput.Position = UDim2.new(0.5, 5, 0, 55)
+    daysInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    daysInput.BorderColor3 = Color3.fromRGB(255, 215, 0)
+    daysInput.BorderSizePixel = 1
+    daysInput.Text = "30"
+    daysInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    daysInput.Font = Enum.Font.Gotham
+    daysInput.TextSize = 11
+    daysInput.Parent = inputFrame
+    
+    local daysCorner = Instance.new("UICorner")
+    daysCorner.CornerRadius = UDim.new(0, 5)
+    daysCorner.Parent = daysInput
+    
+    -- Action Buttons
+    local addButton = Instance.new("TextButton")
+    addButton.Size = UDim2.new(0.45, 0, 0, 30)
+    addButton.Position = UDim2.new(0.04, 0, 0, 150)
+    addButton.BackgroundColor3 = Color3.fromRGB(30, 120, 30)
+    addButton.BorderColor3 = Color3.fromRGB(80, 255, 80)
+    addButton.BorderSizePixel = 1
+    addButton.Text = "ADD VIP"
+    addButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    addButton.Font = Enum.Font.GothamBold
+    addButton.TextSize = 12
+    addButton.Parent = mainFrame
+    
+    local addCorner = Instance.new("UICorner")
+    addCorner.CornerRadius = UDim.new(0, 6)
+    addCorner.Parent = addButton
+    
+    local removeButton = Instance.new("TextButton")
+    removeButton.Size = UDim2.new(0.45, 0, 0, 30)
+    removeButton.Position = UDim2.new(0.51, 0, 0, 150)
+    removeButton.BackgroundColor3 = Color3.fromRGB(120, 30, 30)
+    removeButton.BorderColor3 = Color3.fromRGB(255, 80, 80)
+    removeButton.BorderSizePixel = 1
+    removeButton.Text = "REMOVE"
+    removeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    removeButton.Font = Enum.Font.GothamBold
+    removeButton.TextSize = 12
+    removeButton.Parent = mainFrame
+    
+    local removeCorner = Instance.new("UICorner")
+    removeCorner.CornerRadius = UDim.new(0, 6)
+    removeCorner.Parent = removeButton
+    
+    -- Status Label
+    local statusLabel = Instance.new("TextLabel")
+    statusLabel.Size = UDim2.new(0.92, 0, 0, 20)
+    statusLabel.Position = UDim2.new(0.04, 0, 0, 190)
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.Text = "Ready"
+    statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+    statusLabel.Font = Enum.Font.GothamBold
+    statusLabel.TextSize = 11
+    statusLabel.TextXAlignment = Enum.TextXAlignment.Center
+    statusLabel.Parent = mainFrame
+    
+    -- VIP List
+    local listLabel = Instance.new("TextLabel")
+    listLabel.Size = UDim2.new(0.92, 0, 0, 20)
+    listLabel.Position = UDim2.new(0.04, 0, 0, 215)
+    listLabel.BackgroundTransparency = 1
+    listLabel.Text = "VIP USERS:"
+    listLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+    listLabel.Font = Enum.Font.GothamBold
+    listLabel.TextSize = 10
+    listLabel.TextXAlignment = Enum.TextXAlignment.Left
+    listLabel.Parent = mainFrame
+    
+    local listFrame = Instance.new("Frame")
+    listFrame.Size = UDim2.new(0.92, 0, 0, 140)
+    listFrame.Position = UDim2.new(0.04, 0, 0, 240)
+    listFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    listFrame.BorderSizePixel = 0
+    listFrame.ClipsDescendants = true
+    listFrame.Parent = mainFrame
+    
+    local listCorner = Instance.new("UICorner")
+    listCorner.CornerRadius = UDim.new(0, 8)
+    listCorner.Parent = listFrame
+    
+    local scrollFrame = Instance.new("ScrollingFrame")
+    scrollFrame.Size = UDim2.new(1, 0, 1, 0)
+    scrollFrame.BackgroundTransparency = 1
+    scrollFrame.ScrollBarThickness = 5
+    scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(255, 215, 0)
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+    scrollFrame.Parent = listFrame
+    
+    local listLayout = Instance.new("UIListLayout")
+    listLayout.Padding = UDim.new(0, 3)
+    listLayout.Parent = scrollFrame
+    
+    -- Credit
+    local creditLabel = Instance.new("TextLabel")
+    creditLabel.Size = UDim2.new(1, 0, 0, 15)
+    creditLabel.Position = UDim2.new(0, 0, 1, -18)
+    creditLabel.BackgroundTransparency = 1
+    creditLabel.Text = "By: Nazam | Auto-Webhook Sync"
+    creditLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
+    creditLabel.Font = Enum.Font.Gotham
+    creditLabel.TextSize = 8
+    creditLabel.Parent = mainFrame
+    
+    -- Refresh VIP List Display
+    local function refreshList()
+        for _, child in pairs(scrollFrame:GetChildren()) do
+            if child:IsA("Frame") then
+                child:Destroy()
+            end
+        end
+        
+        for _, vipUser in pairs(VIPList) do
+            local entry = Instance.new("Frame")
+            entry.Size = UDim2.new(1, -6, 0, 30)
+            entry.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            entry.BorderSizePixel = 0
+            entry.Parent = scrollFrame
+            
+            local entryCorner = Instance.new("UICorner")
+            entryCorner.CornerRadius = UDim.new(0, 5)
+            entryCorner.Parent = entry
+            
+            local nameLabel = Instance.new("TextLabel")
+            nameLabel.Size = UDim2.new(0.7, 0, 1, 0)
+            nameLabel.Position = UDim2.new(0, 5, 0, 0)
+            nameLabel.BackgroundTransparency = 1
+            nameLabel.Text = vipUser.username
+            nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            nameLabel.Font = Enum.Font.Gotham
+            nameLabel.TextSize = 9
+            nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+            nameLabel.Parent = entry
+            
+            local daysRemaining = math.floor((vipUser.expiry - os.time()) / 86400)
+            
+            local daysLabel = Instance.new("TextLabel")
+            daysLabel.Size = UDim2.new(0.3, 0, 1, 0)
+            daysLabel.Position = UDim2.new(0.7, 0, 0, 0)
+            daysLabel.BackgroundTransparency = 1
+            
+            if daysRemaining > 0 then
+                daysLabel.Text = daysRemaining .. "d"
+                daysLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+            else
+                daysLabel.Text = "EXPIRED"
+                daysLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+            end
+            
+            daysLabel.Font = Enum.Font.GothamBold
+            daysLabel.TextSize = 8
+            daysLabel.TextXAlignment = Enum.TextXAlignment.Right
+            daysLabel.Parent = entry
+        end
+        
+        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
+    end
+    
+    -- Get User ID from Username
+    local function getUserId(username)
+        local success, userId = pcall(function()
+            return Players:GetUserIdFromNameAsync(username)
+        end)
+        return success and userId or nil
+    end
+    
+    -- Add VIP Function
+    local function addVIP()
+        local username = usernameInput.Text:match("^%s*(.-)%s*$")
+        local days = tonumber(daysInput.Text)
+        
+        if username == "" or not days or days <= 0 then
+            statusLabel.Text = "Invalid input!"
+            statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+            task.wait(2)
+            statusLabel.Text = "Ready"
+            statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+            return
+        end
+        
+        statusLabel.Text = "Getting User ID..."
+        statusLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+        
+        local userId = getUserId(username)
+        
+        if not userId then
+            statusLabel.Text = "User not found!"
+            statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+            task.wait(2)
+            statusLabel.Text = "Ready"
+            statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+            return
+        end
+        
+        local expiryTime = os.time() + (days * 86400)
+        
+        -- Check if user already exists
+        local exists = false
+        for i, vipUser in pairs(VIPList) do
+            if vipUser.username == username or vipUser.userid == tostring(userId) then
+                VIPList[i].expiry = expiryTime
+                exists = true
+                break
+            end
+        end
+        
+        if not exists then
+            table.insert(VIPList, {
+                username = username,
+                userid = tostring(userId),
+                expiry = expiryTime,
+                added_date = os.time()
+            })
+        end
+        
+        statusLabel.Text = "Sending to webhook..."
+        statusLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+        
+        local webhookSuccess = sendWebhook(
+            "✅ VIP Added/Updated",
+            string.format("**Username:** %s\n**User ID:** %s\n**Duration:** %d days\n**Expiry:** <t:%d:R>\n**Action:** %s",
+                username,
+                userId,
+                days,
+                expiryTime,
+                exists and "Updated" or "Added"
+            ),
+            3066993
+        )
+        
+        if webhookSuccess then
+            statusLabel.Text = "VIP Added! ✓"
+            statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+        else
+            statusLabel.Text = "Added (Webhook failed)"
+            statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+        end
+        
+        usernameInput.Text = ""
+        refreshList()
+        
+        task.wait(2)
+        statusLabel.Text = "Ready"
+        statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+    end
+    
+    -- Remove VIP Function
+    local function removeVIP()
+        local username = usernameInput.Text:match("^%s*(.-)%s*$")
+        
+        if username == "" then
+            statusLabel.Text = "Enter username!"
+            statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+            task.wait(2)
+            statusLabel.Text = "Ready"
+            statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+            return
+        end
+        
+        local removed = false
+        local removedUser = nil
+        
+        for i, vipUser in pairs(VIPList) do
+            if vipUser.username:lower() == username:lower() then
+                removedUser = vipUser
+                table.remove(VIPList, i)
+                removed = true
+                break
+            end
+        end
+        
+        if not removed then
+            statusLabel.Text = "User not found!"
+            statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+            task.wait(2)
+            statusLabel.Text = "Ready"
+            statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+            return
+        end
+        
+        statusLabel.Text = "Sending to webhook..."
+        statusLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+        
+        local webhookSuccess = sendWebhook(
+            "❌ VIP Removed",
+            string.format("**Username:** %s\n**User ID:** %s",
+                removedUser.username,
+                removedUser.userid
+            ),
+            15158332
+        )
+        
+        if webhookSuccess then
+            statusLabel.Text = "VIP Removed! ✓"
+            statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+        else
+            statusLabel.Text = "Removed (Webhook failed)"
+            statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+        end
+        
+        usernameInput.Text = ""
+        refreshList()
+        
+        task.wait(2)
+        statusLabel.Text = "Ready"
+        statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+    end
+    
+    -- Button Handlers
+    addButton.MouseButton1Click:Connect(addVIP)
+    removeButton.MouseButton1Click:Connect(removeVIP)
+    
+    addButton.MouseEnter:Connect(function()
+        addButton.BackgroundColor3 = Color3.fromRGB(40, 140, 40)
+    end)
+    
+    addButton.MouseLeave:Connect(function()
+        addButton.BackgroundColor3 = Color3.fromRGB(30, 120, 30)
+    end)
+    
+    removeButton.MouseEnter:Connect(function()
+        removeButton.BackgroundColor3 = Color3.fromRGB(140, 40, 40)
+    end)
+    
+    removeButton.MouseLeave:Connect(function()
+        removeButton.BackgroundColor3 = Color3.fromRGB(120, 30, 30)
+    end)
+    
+    -- Minimize/Maximize
+    local isMinimized = false
+    
+    closeButton.MouseButton1Click:Connect(function()
+        if not isMinimized then
+            mainFrame.Visible = false
+            iconButton.Visible = true
+            isMinimized = true
+        end
+    end)
+    
+    iconButton.MouseButton1Click:Connect(function()
+        if isMinimized then
+            mainFrame.Visible = true
+            iconButton.Visible = false
+            isMinimized = false
+        end
+    end)
+    
+    -- Drag System
+    local UIS = game:GetService("UserInputService")
+    local dragging, dragStart, startPos = false, nil, nil
+    
+    dragHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = mainFrame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    UIS.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    
+    -- Auto-refresh every 30 seconds
+    spawn(function()
+        while true do
+            wait(30)
+            loadVIPData()
+            refreshList()
+        end
+    end)
+    
+    -- Initial load
+    loadVIPData()
+    refreshList()
+end
 
-print("===========================================")
-print("VIP ADMIN PANEL LOADED!")
-print("Key: vip-zam")
-print("Made by: Nazam")
-print("===========================================")
+createVIPManagerGUI()
+
+print("============================")
+print("VIP MANAGER LOADED!")
+print("By: Nazam")
+print("============================")
+print("CARA SETTING VIP:")
+print("1. Ketik username Roblox")
+print("2. Set jumlah hari (default 30)")
+print("3. Klik ADD VIP")
+print("4. Otomatis kirim ke Discord!")
+print("============================")
+print("WEBHOOK URL:", WEBHOOK_URL)
+print("============================")
